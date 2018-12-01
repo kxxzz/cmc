@@ -29,9 +29,10 @@ typedef float f32;
 typedef double f64;
 
 
+#ifdef ARYLEN
+# undef ARYLEN
+#endif
 #define ARYLEN(a) (sizeof(a) / sizeof((a)[0]))
-
-
 
 
 
