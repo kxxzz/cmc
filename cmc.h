@@ -1832,6 +1832,10 @@ static bool aabbInFrustum(const Frustum* frus, const BBox* aabb)
         int py = (int)(plane->normal[1] > 0.0f);
         int pz = (int)(plane->normal[2] > 0.0f);
         float dp = plane->normal[0] * box[px][0] + plane->normal[1] * box[py][1] + plane->normal[2] * box[pz][2];
+        if (isnan(dp))
+        {
+            return false;
+        }
         if (dp < -plane->d)
         {
             return false;
