@@ -1491,7 +1491,7 @@ typedef struct BBox
     vec3 max;
 } BBox;
 
-static BBox newBBoxEmpty()
+static BBox bboxEmpty()
 {
     BBox a =
     {
@@ -1548,7 +1548,7 @@ static void bboxCorners(vec3 corners[8], const BBox* box)
 }
 static BBox bboxTransform(const BBox* box, const mat4 mat)
 {
-    BBox box1 = newBBoxEmpty();
+    BBox box1 = bboxEmpty();
     if ((INFINITY == box->min[0]) ||
         (INFINITY == box->min[1]) ||
         (INFINITY == box->min[2]) ||
@@ -1618,7 +1618,7 @@ typedef struct Plane
     float d;
 } Plane;
 
-static Plane newPlaneFrom3Points(const vec3 pt1, const vec3 pt2, const vec3 pt3)
+static Plane planeFrom3Points(const vec3 pt1, const vec3 pt2, const vec3 pt3)
 {
     vec3 a, b, normal;
     vec3_sub(a, pt2, pt1);
@@ -1690,7 +1690,7 @@ typedef struct Sphere
     float radius;
 } Sphere;
 
-static Sphere newSphere(const vec3 center, float radius)
+static Sphere sphereNew(const vec3 center, float radius)
 {
     Sphere a;
     memcpy(a.center, center, sizeof(vec3));
@@ -1741,7 +1741,7 @@ typedef struct Frustum
 } Frustum;
 
 
-static Frustum newFrustum(const mat4 vp)
+static Frustum frustumNew(const mat4 vp)
 {
     Frustum _frus = { 0 };
     Frustum* frus = &_frus;
