@@ -107,15 +107,15 @@ static float smoothstep(float edge0, float edge1, float x)
 
 
 
-static float degToRad(float degrees)
+static float radians(float deg)
 {
-    float radians = (float)(degrees * DEG2RAD);
-    return radians;
+    float rad = (float)(deg * DEG2RAD);
+    return rad;
 }
-static float radToDeg(float radians)
+static float degrees(float rad)
 {
-    float degrees = (float)(radians * RAD2DEG);
-    return degrees;
+    float deg = (float)(rad * RAD2DEG);
+    return deg;
 }
 
 
