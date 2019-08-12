@@ -1015,6 +1015,7 @@ static void mat4_viewRH(mat4 r, const vec3 cam, const vec3 xaxis, const vec3 yax
     r[3][2] = -vec3_dot(zaxis, cam);
     r[3][3] = 1;
 }
+
 static void mat4_lookatRH(mat4 r, const vec3 cam, const vec3 target, const vec3 up)
 {
     vec3 xaxis, yaxis, zaxis;
@@ -1029,6 +1030,7 @@ static void mat4_lookatRH(mat4 r, const vec3 cam, const vec3 target, const vec3 
 
     mat4_viewRH(r, cam, xaxis, yaxis, zaxis);
 }
+
 static void mat4_fpsViewRH(mat4 r, const vec3 cam, float pitch, float yaw)
 {
     float cosPitch = cos(pitch);
@@ -1747,19 +1749,19 @@ static Sphere sphereNew(const vec3 center, float radius)
 
 enum
 {
-    FrustumPlane_Near,
-    FrustumPlane_Far,
     FrustumPlane_Left,
     FrustumPlane_Right,
     FrustumPlane_Top,
     FrustumPlane_Bottom,
-
-    NumFrustumPlanes
+    FrustumPlane_Near,
+    FrustumPlane_Far,
+    FrustumPlaneCount
 };
 
 typedef struct Frustum
 {
-    Plane planes[NumFrustumPlanes];
+    Plane planes[FrustumPlaneCount];
+    bool infiniteFar;
 } Frustum;
 
 
@@ -1798,13 +1800,21 @@ static Frustum frustumNew(const mat4 vp)
     frus->planes[FrustumPlane_Near].normal[2] = vp[2][3] + vp[2][2];
     frus->planes[FrustumPlane_Near].d = vp[3][3] + vp[3][2];
 
-    // far
-    frus->planes[FrustumPlane_Far].normal[0] = vp[0][3] - vp[0][2];
-    frus->planes[FrustumPlane_Far].normal[1] = vp[1][3] - vp[1][2];
-    frus->planes[FrustumPlane_Far].normal[2] = vp[2][3] - vp[2][2];
-    frus->planes[FrustumPlane_Far].d = vp[3][3] - vp[3][2];
-
-    for (u32 i = 0; i < NumFrustumPlanes; ++i)
+    if (vp[2][2] == vp[2][3])
+    {
+        frus->infiniteFar = true;
+    }
+    else
+    {
+        // far
+        frus->planes[FrustumPlane_Far].normal[0] = vp[0][3] - vp[0][2];
+        frus->planes[FrustumPlane_Far].normal[1] = vp[1][3] - vp[1][2];
+        frus->planes[FrustumPlane_Far].normal[2] = vp[2][3] - vp[2][2];
+        frus->planes[FrustumPlane_Far].d = vp[3][3] - vp[3][2];
+    }
+    static_assert(FrustumPlane_Far == FrustumPlaneCount - 1, "");
+    u32 n = frus->infiniteFar ? (FrustumPlaneCount - 1) : FrustumPlaneCount;
+    for (u32 i = 0; i < n; ++i)
     {
         normalizePlane(frus->planes + i);
     }
@@ -1817,7 +1827,7 @@ static Frustum frustumNew(const mat4 vp)
 
 static bool pointInFrustum(const Frustum* frus, const vec3 pt)
 {
-    for (u32 i = 0; i < NumFrustumPlanes; ++i)
+    for (u32 i = 0; i < FrustumPlaneCount; ++i)
     {
         if (signedDistanceToPoint(frus->planes + i, pt) < 0)
         {
@@ -1828,7 +1838,7 @@ static bool pointInFrustum(const Frustum* frus, const vec3 pt)
 }
 static bool sphereInFrustum(const Frustum* frus, const Sphere* sphere)
 {
-    for (u32 i = 0; i < NumFrustumPlanes; ++i)
+    for (u32 i = 0; i < FrustumPlaneCount; ++i)
     {
         if (signedDistanceToPoint(frus->planes + i, sphere->center) < -sphere->radius)
         {
@@ -1847,7 +1857,9 @@ static bool aabbInFrustum(const Frustum* frus, const BBox* aabb)
     vec3 box[2];
     vec3_dup(box[0], aabb->min);
     vec3_dup(box[1], aabb->max);
-    for (u32 i = 0; i < NumFrustumPlanes; ++i)
+    static_assert(FrustumPlane_Far == FrustumPlaneCount - 1, "");
+    u32 n = frus->infiniteFar ? (FrustumPlaneCount - 1) : FrustumPlaneCount;
+    for (u32 i = 0; i < n; ++i)
     {
         const Plane* plane = frus->planes + i;
         int px = (int)(plane->normal[0] > 0.0f);
@@ -1917,7 +1929,7 @@ static void calcFrustumPyramidCorners(vec3* corners, const Frustum* frus)
 static bool calcFrustumPyramidIntersect(const Frustum* frus, const Frustum* pyramid, const vec3 frusV[8], const vec3 pyramidV[5])
 {
     bool intersects = true;
-    for (u32 i = 0; i < NumFrustumPlanes; ++i)
+    for (u32 i = 0; i < FrustumPlaneCount; ++i)
     {
         bool isAnyVertexInPositiveSide = false;
         for (int j = 0; j < 5; ++j)
@@ -1926,7 +1938,7 @@ static bool calcFrustumPyramidIntersect(const Frustum* frus, const Frustum* pyra
         }
         intersects &= isAnyVertexInPositiveSide;
     }
-    for (u32 i = 0; i < NumFrustumPlanes; ++i)
+    for (u32 i = 0; i < FrustumPlaneCount; ++i)
     {
         bool isAnyVertexInPositiveSide = false;
         for (int j = 0; j < 8; ++j)
