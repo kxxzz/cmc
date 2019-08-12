@@ -1761,7 +1761,6 @@ enum
 typedef struct Frustum
 {
     Plane planes[FrustumPlaneCount];
-    bool infiniteFar;
 } Frustum;
 
 
@@ -1802,7 +1801,9 @@ static Frustum frustumNew(const mat4 vp)
 
     if (vp[2][2] == vp[2][3])
     {
-        frus->infiniteFar = true;
+        // infinite far
+        vec3_scale(frus->planes[FrustumPlane_Far].normal, frus->planes[FrustumPlane_Near].normal, -1);
+        frus->planes[FrustumPlane_Far].d = INFINITY;
     }
     else
     {
@@ -1812,9 +1813,7 @@ static Frustum frustumNew(const mat4 vp)
         frus->planes[FrustumPlane_Far].normal[2] = vp[2][3] - vp[2][2];
         frus->planes[FrustumPlane_Far].d = vp[3][3] - vp[3][2];
     }
-    static_assert(FrustumPlane_Far == FrustumPlaneCount - 1, "");
-    u32 n = frus->infiniteFar ? (FrustumPlaneCount - 1) : FrustumPlaneCount;
-    for (u32 i = 0; i < n; ++i)
+    for (u32 i = 0; i < FrustumPlaneCount; ++i)
     {
         normalizePlane(frus->planes + i);
     }
@@ -1857,9 +1856,7 @@ static bool aabbInFrustum(const Frustum* frus, const BBox* aabb)
     vec3 box[2];
     vec3_dup(box[0], aabb->min);
     vec3_dup(box[1], aabb->max);
-    static_assert(FrustumPlane_Far == FrustumPlaneCount - 1, "");
-    u32 n = frus->infiniteFar ? (FrustumPlaneCount - 1) : FrustumPlaneCount;
-    for (u32 i = 0; i < n; ++i)
+    for (u32 i = 0; i < FrustumPlaneCount; ++i)
     {
         const Plane* plane = frus->planes + i;
         int px = (int)(plane->normal[0] > 0.0f);
