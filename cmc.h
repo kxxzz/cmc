@@ -1051,50 +1051,72 @@ static void mat4_fpsViewRH(mat4 r, const vec3 cam, float pitch, float yaw)
 
 
 
-
-static void mat4_perspective(mat4 proj, float fov, float aspect, float znear, float zfar)
+// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#infinite-perspective-projection
+static void mat4_infinitePerspective(mat4 proj, float fov, float aspect, float znear)
 {
-    float halfW, halfH;
+    float w, h;
     if (aspect >= 1)
     {
-        halfH = tanf(fov * 0.5f) * znear;
-        halfW = halfH * aspect;
+        h = tanf(fov * 0.5f);
+        w = h * aspect;
     }
     else
     {
-        halfW = tanf(fov * 0.5f) * znear;
-        halfH = halfW / aspect;
+        w = tanf(fov * 0.5f);
+        h = w / aspect;
     }
-    mat4_frustum(proj, -halfW, halfW, -halfH, halfH, znear, zfar);
+    memset(proj, 0, sizeof(mat4));
+    proj[0][0] = 1.f / w;
+    proj[1][1] = 1.f / h;
+    proj[2][2] = -1.f;
+    proj[2][3] = -1.f;
+    proj[3][2] = -2.f * znear;
 }
+
+// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#finite-perspective-projection
+static void mat4_finitePerspective(mat4 proj, float fov, float aspect, float znear, float zfar)
+{
+    float w, h;
+    if (aspect >= 1)
+    {
+        h = tanf(fov * 0.5f);
+        w = h * aspect;
+    }
+    else
+    {
+        w = tanf(fov * 0.5f);
+        h = w / aspect;
+    }
+    memset(proj, 0, sizeof(mat4));
+    proj[0][0] = 1.f / w;
+    proj[1][1] = 1.f / h;
+    proj[2][2] = (zfar + znear) / (znear - zfar);
+    proj[2][3] = -1.f;
+    proj[3][2] = 2.f*zfar*znear / (znear - zfar);
+}
+//{
+//    float halfW, halfH;
+//    if (aspect >= 1)
+//    {
+//        halfH = tanf(fov * 0.5f) * znear;
+//        halfW = halfH * aspect;
+//    }
+//    else
+//    {
+//        halfW = tanf(fov * 0.5f) * znear;
+//        halfH = halfW / aspect;
+//    }
+//    mat4_frustum(proj, -halfW, halfW, -halfH, halfH, znear, zfar);
+//}
+
+
+
+
+
 static float viewDistForPrjNormSize(float fov)
 {
     return 0.5f / tanf(fov*0.5f);
 }
-
-
-
-
-
-
-// todo
-static void mat4_infinitePerspective(mat4 proj, float fovy, float aspect, float zNear)
-{
-    float range = (float)tan(fovy / 2.f) * zNear;
-    float left = -range * aspect;
-    float right = range * aspect;
-    float bottom = -range;
-    float top = range;
-
-    memset(proj, 0, sizeof(mat4));
-    proj[0][0] = (2.f * zNear) / (right - left);
-    proj[1][1] = (2.f * zNear) / (top - bottom);
-    proj[2][2] = -1.f;
-    proj[2][3] = -1.f;
-    proj[3][2] = -2.f * zNear;
-}
-
-
 
 
 
