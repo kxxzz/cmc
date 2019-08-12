@@ -351,42 +351,6 @@ static bool vec3_eq_almost(const vec3 a, const vec3 b)
 
 
 
-
-
-// todo test
-static void euler_to_dir(vec3 dir, const vec3 euler)
-{
-    float yaw = euler[0];
-    float pitch = euler[1];
-    float roll = euler[2];
-    dir[0] = -cos(yaw)*sin(pitch)*sin(roll) - sin(yaw)*cos(roll);
-    dir[1] = -sin(yaw)*sin(pitch)*sin(roll) + cos(yaw)*cos(roll);
-    dir[2] = cos(pitch)*sin(roll);
-}
-
-// todo test
-static void dir_to_euler(const vec3 dir, vec3 euler)
-{
-    euler[0] = -atan(dir[1] / dir[2]);
-    euler[1] = atan(dir[0] / dir[2]);
-    euler[2] = 0;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static void vec4_dup(vec4 r, const vec4 a)
 {
     r[0] = a[0];
@@ -560,37 +524,6 @@ static bool mat3_inverse(mat3 r, const mat3 mat)
     return true;
 }
 
-
-
-
-
-
-// todo test
-// https://gamedev.stackexchange.com/questions/22204/from-normal-to-rotation-matrix
-static void mat3_from_dir(mat3 r, const vec3 dir)
-{
-    vec3 left = { 1,0,0 };
-    vec3 up = { 0,1,0 };
-    // Find a vector in the plane
-    vec3 tangent0, tangent1;
-    vec3_cross(tangent0, dir, left);
-    if (vec3_dot(tangent0, tangent0) < 0.001)
-    {
-        vec3_cross(tangent0, dir, up);
-    }
-    vec3_norm(tangent0, tangent0);
-    // Find another vector in the plane
-    vec3_cross(tangent1, dir, tangent0);
-    vec3_norm(tangent1, tangent1);
-    // Construct a 3x3 matrix by storing three vectors in the columns of the matrix
-    mat3 t =
-    {
-        { tangent0[0], tangent1[0], dir[0] },
-        { tangent0[1], tangent1[1], dir[1] },
-        { tangent0[2], tangent1[2], dir[2] },
-    };
-    mat3_dup(r, t);
-}
 
 
 
