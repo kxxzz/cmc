@@ -1068,10 +1068,10 @@ static float aspectFromPerspective(const mat4 proj)
     float a = proj[1][1] / proj[0][0];
     return a;
 }
-static float fovFromPerspective(const mat4 proj)
+static float yfovFromPerspective(const mat4 proj)
 {
-    float fov = atan(1.0f / proj[1][1]) * 2.0;
-    return fov;
+    float yfov = atan(1.0f / proj[1][1]) * 2.0;
+    return yfov;
 }
 
 
