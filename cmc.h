@@ -1477,7 +1477,7 @@ static void bboxSize(vec3 size, const BBox* box)
 {
     vec3_sub(size, box->max, box->min);
 }
-static void bboxCenter(vec3 center, const BBox* box)
+static void bboxCentroid(vec3 center, const BBox* box)
 {
     vec3_add(center, box->min, box->max);
     vec3_scale(center, center, 0.5f);
