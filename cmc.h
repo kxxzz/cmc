@@ -53,31 +53,40 @@ typedef double f64;
 
 
 
-static const float DEG2RAD = (float)(PI / 180.0);
-static const float RAD2DEG = (float)(180.0 / PI);
+static const f32 DEG2RAD = (f32)(PI / 180.0);
+static const f32 RAD2DEG = (f32)(180.0 / PI);
+
+
+
+
+typedef enum Axis
+{
+    Axis_X,
+    Axis_Y,
+    Axis_Z,
+} Axis;
 
 
 
 
 
 
-
-static bool float_eq(float a, float b)
+static bool float_eq(f32 a, f32 b)
 {
     return fabs(a - b) <= FLT_EPSILON;
 }
-static bool float_eq_almost(float a, float b)
+static bool float_eq_almost(f32 a, f32 b)
 {
     return fabs(a - b) <= 0.00001;
 }
 
 
 
-static float fsel(float a, float b, float c)
+static f32 fsel(f32 a, f32 b, f32 c)
 {
     return a >= 0 ? b : c;
 }
-static float clamp(float x, float low, float hi)
+static f32 clamp(f32 x, f32 low, f32 hi)
 {
     x = fsel(x - low, x, low);
     return fsel(x - hi, hi, x);
@@ -86,7 +95,7 @@ static float clamp(float x, float low, float hi)
 
 
 
-static float mix(float a, float b, float w)
+static f32 mix(f32 a, f32 b, f32 w)
 {
     return a + (b - a) * w;
 }
@@ -95,7 +104,7 @@ static float mix(float a, float b, float w)
 
 
 
-static float smoothstep(float edge0, float edge1, float x)
+static f32 smoothstep(f32 edge0, f32 edge1, f32 x)
 {
     // Scale, bias and saturate x to 0..1 range
     x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
@@ -107,21 +116,21 @@ static float smoothstep(float edge0, float edge1, float x)
 
 
 
-static float radians(float deg)
+static f32 radians(f32 deg)
 {
-    float rad = (float)(deg * DEG2RAD);
+    f32 rad = (f32)(deg * DEG2RAD);
     return rad;
 }
-static float degrees(float rad)
+static f32 degrees(f32 rad)
 {
-    float deg = (float)(rad * RAD2DEG);
+    f32 deg = (f32)(rad * RAD2DEG);
     return deg;
 }
 
 
 
 
-static float angleInRad(float x, float y)
+static f32 angleInRad(f32 x, f32 y)
 {
     return atan2f(y, x);
 }
@@ -131,15 +140,15 @@ static float angleInRad(float x, float y)
 
 
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
-static float invSqrt(float x)
+static f32 invSqrt(f32 x)
 {
     union {
-        float f;
+        f32 f;
         uint32_t i;
     } conv;
 
-    float x2;
-    const float threehalfs = 1.5F;
+    f32 x2;
+    const f32 threehalfs = 1.5F;
 
     x2 = x * 0.5F;
     conv.f = x;
@@ -161,10 +170,10 @@ static float invSqrt(float x)
 
 
 
-typedef float vec2[2];
-typedef float vec3[3];
-typedef float vec4[4];
-typedef float quat[4];
+typedef f32 vec2[2];
+typedef f32 vec3[3];
+typedef f32 vec4[4];
+typedef f32 quat[4];
 
 typedef vec2 mat2[2];
 typedef vec3 mat3[3];
@@ -208,12 +217,12 @@ static void vec2_sub(vec2 r, const vec2 a, const vec2 b)
     r[0] = a[0] - b[0];
     r[1] = a[1] - b[1];
 }
-static void vec2_scale(vec2 r, const vec2 a, float s)
+static void vec2_scale(vec2 r, const vec2 a, f32 s)
 {
     r[0] = a[0] * s;
     r[1] = a[1] * s;
 }
-static float vec2_dot(const vec2 a, const vec2 b)
+static f32 vec2_dot(const vec2 a, const vec2 b)
 {
     return a[0] * b[0] + a[1] * b[1];
 }
@@ -224,20 +233,20 @@ static void vec2_cross(vec2 r, const vec2 a, const vec2 b)
     t[1] = a[2] * b[0] - a[0] * b[2];
     vec2_dup(r, t);
 }
-static float vec2_len2(const vec2 a)
+static f32 vec2_len2(const vec2 a)
 {
     return a[0] * a[0] + a[1] * a[1];
 }
-static float vec2_len(const vec2 a)
+static f32 vec2_len(const vec2 a)
 {
-    return (float)sqrt(vec2_len2(a));
+    return (f32)sqrt(vec2_len2(a));
 }
 static void vec2_norm(vec2 r, const vec2 a)
 {
-    float s = 1.f / vec2_len(a);
+    f32 s = 1.f / vec2_len(a);
     vec2_scale(r, a, s);
 }
-static void vec2_interpo(vec2 r, const vec2 a, const vec2 b, float interpol)
+static void vec2_interpo(vec2 r, const vec2 a, const vec2 b, f32 interpol)
 {
     vec2 diff;
     vec2_sub(diff, b, a);
@@ -286,13 +295,13 @@ static void vec3_sub(vec3 r, const vec3 a, const vec3 b)
     r[1] = a[1] - b[1];
     r[2] = a[2] - b[2];
 }
-static void vec3_scale(vec3 r, const vec3 a, float s)
+static void vec3_scale(vec3 r, const vec3 a, f32 s)
 {
     r[0] = a[0] * s;
     r[1] = a[1] * s;
     r[2] = a[2] * s;
 }
-static float vec3_dot(const vec3 a, const vec3 b)
+static f32 vec3_dot(const vec3 a, const vec3 b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
@@ -304,20 +313,20 @@ static void vec3_cross(vec3 r, const vec3 a, const vec3 b)
     t[2] = a[0] * b[1] - a[1] * b[0];
     vec3_dup(r, t);
 }
-static float vec3_len2(const vec3 a)
+static f32 vec3_len2(const vec3 a)
 {
     return a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
 }
-static float vec3_len(const vec3 a)
+static f32 vec3_len(const vec3 a)
 {
-    return (float)sqrt(vec3_len2(a));
+    return (f32)sqrt(vec3_len2(a));
 }
 static void vec3_norm(vec3 r, const vec3 a)
 {
-	float s = 1.f / vec3_len(a);
+	f32 s = 1.f / vec3_len(a);
 	vec3_scale(r, a, s);
 }
-static void vec3_interpo(vec3 r, const vec3 a, const vec3 b, float interpol)
+static void vec3_interpo(vec3 r, const vec3 a, const vec3 b, f32 interpol)
 {
     vec3 diff;
     vec3_sub(diff, b, a);
@@ -379,14 +388,14 @@ static void vec4_sub(vec4 r, const vec4 a, const vec4 b)
     r[2] = a[2] - b[2];
     r[3] = a[3] - b[3];
 }
-static void vec4_scale(vec4 r, const vec4 a, float s)
+static void vec4_scale(vec4 r, const vec4 a, f32 s)
 {
     r[0] = a[0] * s;
     r[1] = a[1] * s;
     r[2] = a[2] * s;
     r[3] = a[3] * s;
 }
-static float vec4_dot(const vec4 a, const vec4 b)
+static f32 vec4_dot(const vec4 a, const vec4 b)
 {
     return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
@@ -399,20 +408,20 @@ static void vec4_cross(vec4 r, const vec4 a, const vec4 b)
     t[3] = 1.f;
     vec4_dup(r, t);
 }
-static float vec4_len2(const vec4 a)
+static f32 vec4_len2(const vec4 a)
 {
     return a[0] * a[0] + a[1] * a[1] + a[2] * a[2];
 }
-static float vec4_len(const vec4 a)
+static f32 vec4_len(const vec4 a)
 {
-    return (float)sqrt(vec4_len2(a));
+    return (f32)sqrt(vec4_len2(a));
 }
 static void vec4_norm(vec4 r, const vec4 a)
 {
-    float s = 1.f / vec4_len(a);
+    f32 s = 1.f / vec4_len(a);
     vec4_scale(r, a, s);
 }
-static void vec4_interpo(vec4 r, const vec4 a, const vec4 b, float interpol)
+static void vec4_interpo(vec4 r, const vec4 a, const vec4 b, f32 interpol)
 {
     vec4 diff;
     vec4_sub(diff, b, a);
@@ -495,8 +504,8 @@ static bool mat3_inverse(mat3 r, const mat3 mat)
 {
     mat3 t;
 
-    float det;
-    float a = mat[0][0], b = mat[0][1], c = mat[0][2],
+    f32 det;
+    f32 a = mat[0][0], b = mat[0][1], c = mat[0][2],
           d = mat[1][0], e = mat[1][1], f = mat[1][2],
           g = mat[2][0], h = mat[2][1], i = mat[2][2];
 
@@ -516,7 +525,7 @@ static bool mat3_inverse(mat3 r, const mat3 mat)
         return false;
     }
 
-    float s = 1.0f / det;
+    f32 s = 1.0f / det;
     mat3_dup(r, t);
     r[0][0] *= s; r[0][1] *= s; r[0][2] *= s;
     r[1][0] *= s; r[1][1] *= s; r[1][2] *= s;
@@ -529,9 +538,9 @@ static bool mat3_inverse(mat3 r, const mat3 mat)
 
 
 
-static void mat3_rotate_axis(mat3 r, const vec3 axis, float angle)
+static void mat3_rotate_axis(mat3 r, const vec3 axis, f32 angle)
 {
-    float length2 = vec3_len2(axis);
+    f32 length2 = vec3_len2(axis);
     if (length2 < FLT_EPSILON)
     {
         mat3_ident(r);
@@ -540,19 +549,19 @@ static void mat3_rotate_axis(mat3 r, const vec3 axis, float angle)
 
     vec3 n;
     vec3_scale(n, axis, 1.f / sqrtf(length2));
-    float s = sinf(angle);
-    float c = cosf(angle);
-    float k = 1.f - c;
+    f32 s = sinf(angle);
+    f32 c = cosf(angle);
+    f32 k = 1.f - c;
 
-    float xx = n[0] * n[0] * k + c;
-    float yy = n[1] * n[1] * k + c;
-    float zz = n[2] * n[2] * k + c;
-    float xy = n[0] * n[1] * k;
-    float yz = n[1] * n[2] * k;
-    float zx = n[2] * n[0] * k;
-    float xs = n[0] * s;
-    float ys = n[1] * s;
-    float zs = n[2] * s;
+    f32 xx = n[0] * n[0] * k + c;
+    f32 yy = n[1] * n[1] * k + c;
+    f32 zz = n[2] * n[2] * k + c;
+    f32 xy = n[0] * n[1] * k;
+    f32 yz = n[1] * n[2] * k;
+    f32 zx = n[2] * n[0] * k;
+    f32 xs = n[0] * s;
+    f32 ys = n[1] * s;
+    f32 zs = n[2] * s;
 
     r[0][0] = xx;
     r[0][1] = xy + zs;
@@ -672,7 +681,7 @@ static void mul_mat4_vec3_0(vec3 r, const mat4 m, const vec3 _v)
 
 
 
-static void mat4_scale(mat4 r, const mat4 a, float s)
+static void mat4_scale(mat4 r, const mat4 a, f32 s)
 {
     mat4 t;
     vec4_scale(t[0], a[0], s);
@@ -721,7 +730,7 @@ static void mat4_get_dir(vec3 r, const mat4 a)
 }
 
 
-static void mat4_set_scale(mat4 r, const mat4 a, float s)
+static void mat4_set_scale(mat4 r, const mat4 a, f32 s)
 {
     vec3 scale0;
     mat4_get_scale(scale0, a);
@@ -773,10 +782,10 @@ static void mat4_translate_local(mat4 r, const vec3 v)
     mat4_translate(t, v);
     mat4_mul(r, r, t);
 }
-static void mat4_rotateX(mat4 r, const mat4 a, float angle)
+static void mat4_rotateX(mat4 r, const mat4 a, f32 angle)
 {
-    float s = sinf(angle);
-    float c = cosf(angle);
+    f32 s = sinf(angle);
+    f32 c = cosf(angle);
     mat4 rot;
     mat4_ident(rot);
     rot[1][1] = c;
@@ -785,10 +794,10 @@ static void mat4_rotateX(mat4 r, const mat4 a, float angle)
     rot[2][1] = -s;
     mat4_mul(r, a, rot);
 }
-static void mat4_rotateY(mat4 r, const mat4 a, float angle)
+static void mat4_rotateY(mat4 r, const mat4 a, f32 angle)
 {
-    float s = sinf(angle);
-    float c = cosf(angle);
+    f32 s = sinf(angle);
+    f32 c = cosf(angle);
     mat4 rot;
     mat4_ident(rot);
     rot[0][0] = c;
@@ -797,10 +806,10 @@ static void mat4_rotateY(mat4 r, const mat4 a, float angle)
     rot[2][0] = -s;
     mat4_mul(r, a, rot);
 }
-static void mat4_rotateZ(mat4 r, const mat4 a, float angle)
+static void mat4_rotateZ(mat4 r, const mat4 a, f32 angle)
 {
-    float s = sinf(angle);
-    float c = cosf(angle);
+    f32 s = sinf(angle);
+    f32 c = cosf(angle);
     mat4 rot;
     mat4_ident(rot);
     rot[0][0] = c;
@@ -809,9 +818,9 @@ static void mat4_rotateZ(mat4 r, const mat4 a, float angle)
     rot[1][0] = -s;
     mat4_mul(r, a, rot);
 }
-static void mat4_rotate_axis(mat4 r, const vec3 axis, float angle)
+static void mat4_rotate_axis(mat4 r, const vec3 axis, f32 angle)
 {
-    float length2 = vec3_len2(axis);
+    f32 length2 = vec3_len2(axis);
     if (length2 < FLT_EPSILON)
     {
         mat4_ident(r);
@@ -820,19 +829,19 @@ static void mat4_rotate_axis(mat4 r, const vec3 axis, float angle)
 
     vec3 n;
     vec3_scale(n, axis, 1.f / sqrtf(length2));
-    float s = sinf(angle);
-    float c = cosf(angle);
-    float k = 1.f - c;
+    f32 s = sinf(angle);
+    f32 c = cosf(angle);
+    f32 k = 1.f - c;
 
-    float xx = n[0] * n[0] * k + c;
-    float yy = n[1] * n[1] * k + c;
-    float zz = n[2] * n[2] * k + c;
-    float xy = n[0] * n[1] * k;
-    float yz = n[1] * n[2] * k;
-    float zx = n[2] * n[0] * k;
-    float xs = n[0] * s;
-    float ys = n[1] * s;
-    float zs = n[2] * s;
+    f32 xx = n[0] * n[0] * k + c;
+    f32 yy = n[1] * n[1] * k + c;
+    f32 zz = n[2] * n[2] * k + c;
+    f32 xy = n[0] * n[1] * k;
+    f32 yz = n[1] * n[2] * k;
+    f32 zx = n[2] * n[0] * k;
+    f32 xs = n[0] * s;
+    f32 ys = n[1] * s;
+    f32 zs = n[2] * s;
 
     r[0][0] = xx;
     r[0][1] = xy + zs;
@@ -857,7 +866,7 @@ static void mat4_rotate_axis(mat4 r, const vec3 axis, float angle)
 
 
 
-static void mat4_ortho(mat4 r, float left, float right, float bottom, float top, float n, float f)
+static void mat4_ortho(mat4 r, f32 left, f32 right, f32 bottom, f32 top, f32 n, f32 f)
 {
     r[0][0] = 2.0f / (right - left);
     r[0][1] = 0.0f;
@@ -876,7 +885,7 @@ static void mat4_ortho(mat4 r, float left, float right, float bottom, float top,
     r[3][2] = -(f + n) / (f - n);
     r[3][3] = 1.0f;
 }
-static void mat4_frustum(mat4 r, float left, float right, float bottom, float top, float n, float f)
+static void mat4_frustum(mat4 r, f32 left, f32 right, f32 bottom, f32 top, f32 n, f32 f)
 {
     r[0][0] = 2.0f*n / (right - left);
     r[0][1] = 0.0f;
@@ -964,12 +973,12 @@ static void mat4_lookatRH(mat4 r, const vec3 cam, const vec3 target, const vec3 
     mat4_viewRH(r, cam, xaxis, yaxis, zaxis);
 }
 
-static void mat4_fpsViewRH(mat4 r, const vec3 cam, float pitch, float yaw)
+static void mat4_fpsViewRH(mat4 r, const vec3 cam, f32 pitch, f32 yaw)
 {
-    float cosPitch = cos(pitch);
-    float sinPitch = sin(pitch);
-    float cosYaw = cos(yaw);
-    float sinYaw = sin(yaw);
+    f32 cosPitch = cos(pitch);
+    f32 sinPitch = sin(pitch);
+    f32 cosYaw = cos(yaw);
+    f32 sinYaw = sin(yaw);
 
     vec3 xaxis = { cosYaw, 0, -sinYaw };
     vec3 yaxis = { sinYaw * sinPitch, cosPitch, cosYaw * sinPitch };
@@ -987,9 +996,9 @@ static void mat4_fpsViewRH(mat4 r, const vec3 cam, float pitch, float yaw)
 
 
 // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#infinite-perspective-projection
-static void mat4_infinitePerspective(mat4 proj, float fov, float aspect, float znear)
+static void mat4_infinitePerspective(mat4 proj, f32 fov, f32 aspect, f32 znear)
 {
-    float w, h;
+    f32 w, h;
     if (aspect >= 1)
     {
         h = tanf(fov * 0.5f);
@@ -1009,9 +1018,9 @@ static void mat4_infinitePerspective(mat4 proj, float fov, float aspect, float z
 }
 
 // https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#finite-perspective-projection
-static void mat4_finitePerspective(mat4 proj, float fov, float aspect, float znear, float zfar)
+static void mat4_finitePerspective(mat4 proj, f32 fov, f32 aspect, f32 znear, f32 zfar)
 {
-    float w, h;
+    f32 w, h;
     if (aspect >= 1)
     {
         h = tanf(fov * 0.5f);
@@ -1030,7 +1039,7 @@ static void mat4_finitePerspective(mat4 proj, float fov, float aspect, float zne
     proj[3][2] = 2.f*zfar*znear / (znear - zfar);
 }
 //{
-//    float halfW, halfH;
+//    f32 halfW, halfH;
 //    if (aspect >= 1)
 //    {
 //        halfH = tanf(fov * 0.5f) * znear;
@@ -1048,7 +1057,7 @@ static void mat4_finitePerspective(mat4 proj, float fov, float aspect, float zne
 
 
 
-static float viewDistForPrjNormSize(float fov)
+static f32 viewDistForPrjNormSize(f32 fov)
 {
     return 0.5f / tanf(fov*0.5f);
 }
@@ -1063,14 +1072,14 @@ static void zNearFarFromPerspective(const mat4 proj, vec2 z)
     z[1] = ((proj[2][2] - 1.0f)*z[0]) / (proj[2][2] + 1.0);
 }
 
-static float aspectFromPerspective(const mat4 proj)
+static f32 aspectFromPerspective(const mat4 proj)
 {
-    float a = proj[1][1] / proj[0][0];
+    f32 a = proj[1][1] / proj[0][0];
     return a;
 }
-static float yfovFromPerspective(const mat4 proj)
+static f32 yfovFromPerspective(const mat4 proj)
 {
-    float yfov = atan(1.0f / proj[1][1]) * 2.0;
+    f32 yfov = atan(1.0f / proj[1][1]) * 2.0;
     return yfov;
 }
 
@@ -1099,8 +1108,8 @@ static void mat4_transpose(mat4 r, const mat4 a)
 
 static bool mat4_inverse(mat4 r, const mat4 a)
 {
-    float s[6];
-    float c[6];
+    f32 s[6];
+    f32 c[6];
     s[0] = a[0][0] * a[1][1] - a[1][0] * a[0][1];
     s[1] = a[0][0] * a[1][2] - a[1][0] * a[0][2];
     s[2] = a[0][0] * a[1][3] - a[1][0] * a[0][3];
@@ -1115,12 +1124,12 @@ static bool mat4_inverse(mat4 r, const mat4 a)
     c[4] = a[2][1] * a[3][3] - a[3][1] * a[2][3];
     c[5] = a[2][2] * a[3][3] - a[3][2] * a[2][3];
 
-    float det = s[0] * c[5] - s[1] * c[4] + s[2] * c[3] + s[3] * c[2] - s[4] * c[1] + s[5] * c[0];
+    f32 det = s[0] * c[5] - s[1] * c[4] + s[2] * c[3] + s[3] * c[2] - s[4] * c[1] + s[5] * c[0];
     if (float_eq(det, 0))
     {
         return false;
     }
-    float idet = 1.0f / det;
+    f32 idet = 1.0f / det;
 
     mat4 t;
 
@@ -1162,14 +1171,14 @@ static bool mat4_inverse(mat4 r, const mat4 a)
 
 static void mat4_from_quat(mat4 r, const quat q)
 {
-    float a = q[3];
-    float b = q[0];
-    float c = q[1];
-    float d = q[2];
-    float a2 = a*a;
-    float b2 = b*b;
-    float c2 = c*c;
-    float d2 = d*d;
+    f32 a = q[3];
+    f32 b = q[0];
+    f32 c = q[1];
+    f32 d = q[2];
+    f32 a2 = a*a;
+    f32 b2 = b*b;
+    f32 c2 = c*c;
+    f32 d2 = d*d;
 
     r[0][0] = a2 + b2 - c2 - d2;
     r[0][1] = 2.f*(b*c + a*d);
@@ -1278,7 +1287,7 @@ static void trs_recompose(mat4 r, const vec3 translation, const vec3 rotation, c
     mat4_mul(t, rot[2], rot[1]);
     mat4_mul(t, t, rot[0]);
 
-    float validScale[3];
+    f32 validScale[3];
     for (u32 i = 0; i < 3; ++i)
     {
         if (fabsf(scale[i]) < FLT_EPSILON)
@@ -1344,21 +1353,21 @@ static void quat_mul(quat r, const quat a, const quat b)
     t[3] = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2];
     quat_dup(r, t);
 }
-static void quat_from_axis_angle(quat r, const vec3 axis, float angle)
+static void quat_from_axis_angle(quat r, const vec3 axis, f32 angle)
 {
     quat t;
-    float rad = angle * 0.5f;
+    f32 rad = angle * 0.5f;
     vec3_scale(t, axis, sinf(rad));
     t[3] = cosf(rad);
 }
 static void quat_from_euler(quat r, const vec3 euler)
 {
-    double sX = sin(euler[0] * 0.5);
-    double cX = cos(euler[0] * 0.5);
-    double sY = sin(euler[1] * 0.5);
-    double cY = cos(euler[1] * 0.5);
-    double sZ = sin(euler[2] * 0.5);
-    double cZ = cos(euler[2] * 0.5);
+    f64 sX = sin(euler[0] * 0.5);
+    f64 cX = cos(euler[0] * 0.5);
+    f64 sY = sin(euler[1] * 0.5);
+    f64 cY = cos(euler[1] * 0.5);
+    f64 sZ = sin(euler[2] * 0.5);
+    f64 cZ = cos(euler[2] * 0.5);
     r[0] = sY * sZ * cX + cY * cZ * sX;
     r[1] = sY * cZ * cX + cY * sZ * sX;
     r[2] = cY * sZ * cX - sY * cZ * sX;
@@ -1373,9 +1382,9 @@ static void quat_to_euler(const quat a, vec3 euler)
 
 
 
-static void quat_interpo(quat r, const quat a, const quat b, float factor)
+static void quat_interpo(quat r, const quat a, const quat b, f32 factor)
 {
-    float cosom = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    f32 cosom = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
     quat end;
     quat_dup(end, b);
     if (cosom < 0.0f)
@@ -1386,11 +1395,11 @@ static void quat_interpo(quat r, const quat a, const quat b, float factor)
         end[2] = -end[2];
         end[3] = -end[3];
     }
-    float sclp, sclq;
+    f32 sclp, sclq;
     // 0.0001 : some epsilon
     if ((1.0f - cosom) > 0.0001f)
     {
-        float omega, sinom;
+        f32 omega, sinom;
         omega = acosf(cosom);
         sinom = sinf(omega);
         sclp = sinf((1.0f - factor) * omega) / sinom;
@@ -1477,19 +1486,42 @@ static void bboxSize(vec3 size, const BBox* box)
 {
     vec3_sub(size, box->max, box->min);
 }
-static void bboxCentroid(vec3 center, const BBox* box)
+static void bboxCentroid(vec3 c, const BBox* box)
 {
-    vec3_add(center, box->min, box->max);
-    vec3_scale(center, center, 0.5f);
+    vec3_add(c, box->min, box->max);
+    vec3_scale(c, c, 0.5f);
+}
+static Axis bboxLongestAxis(const BBox* box)
+{
+    vec3 size;
+    bboxSize(size, box);
+    if ((size[0] > size[1]) && (size[0] > size[2]))
+    {
+        return Axis_X;
+    }
+    else if (size[1] > size[2])
+    {
+        return Axis_Y;
+    }
+    else
+    {
+        return Axis_Z;
+    }
+}
+static f32 bboxSurfaceArea(const BBox* box)
+{
+    vec3 size;
+    bboxSize(size, box);
+    return (size[0] * size[1] + size[1] * size[2] + size[0] * size[2]) * 2.f;
 }
 static void bboxCorners(vec3 corners[8], const BBox* box)
 {
-    float l = box->min[0];
-    float r = box->max[0];
-    float b = box->min[1];
-    float t = box->max[1];
-    float n = box->min[2];
-    float f = box->max[2];
+    f32 l = box->min[0];
+    f32 r = box->max[0];
+    f32 b = box->min[1];
+    f32 t = box->max[1];
+    f32 n = box->min[2];
+    f32 f = box->max[2];
     vec3 _corners[8] =
     {
         { l, b, n },
@@ -1515,12 +1547,12 @@ static BBox bboxTransform(const BBox* box, const mat4 mat)
     {
         return box1;
     }
-    float l = box->min[0];
-    float r = box->max[0];
-    float b = box->min[1];
-    float t = box->max[1];
-    float n = box->min[2];
-    float f = box->max[2];
+    f32 l = box->min[0];
+    f32 r = box->max[0];
+    f32 b = box->min[1];
+    f32 t = box->max[1];
+    f32 n = box->min[2];
+    f32 f = box->max[2];
     vec4 corners[8] =
     {
         { l, b, n, 1.0f },
@@ -1572,7 +1604,7 @@ static bool aabbIntersectPoint(const BBox* a, const vec3 point)
 typedef struct Plane
 {
     vec3 normal;
-    float d;
+    f32 d;
 } Plane;
 
 static Plane planeFrom3Points(const vec3 pt1, const vec3 pt2, const vec3 pt3)
@@ -1582,7 +1614,7 @@ static Plane planeFrom3Points(const vec3 pt1, const vec3 pt2, const vec3 pt3)
     vec3_sub(b, pt3, pt1);
     vec3_cross(normal, a, b);
     vec3_norm(normal, normal);
-    float d = vec3_dot(normal, pt1);
+    f32 d = vec3_dot(normal, pt1);
     Plane plane = { 0 };
     vec3_dup(plane.normal, normal);
     plane.d = d;
@@ -1590,11 +1622,11 @@ static Plane planeFrom3Points(const vec3 pt1, const vec3 pt2, const vec3 pt3)
 }
 static void normalizePlane(Plane* plane)
 {
-    float len = vec3_len(plane->normal);
+    f32 len = vec3_len(plane->normal);
     vec3_scale(plane->normal, plane->normal, 1.0f / len);
     plane->d /= len;
 }
-static float signedDistanceToPoint(const Plane* plane, const vec3 pt)
+static f32 signedDistanceToPoint(const Plane* plane, const vec3 pt)
 {
     return vec3_dot(plane->normal, pt) + plane->d;
 }
@@ -1644,10 +1676,10 @@ static bool calcPlanesIntersect(vec3 r, const Plane* p0, const Plane* p1, const 
 typedef struct Sphere
 {
     vec3 center;
-    float radius;
+    f32 radius;
 } Sphere;
 
-static Sphere sphereNew(const vec3 center, float radius)
+static Sphere sphereNew(const vec3 center, f32 radius)
 {
     Sphere a;
     memcpy(a.center, center, sizeof(vec3));
@@ -1795,7 +1827,7 @@ static bool aabbInFrustum(const Frustum* frus, const BBox* aabb)
         int px = (int)(plane->normal[0] > 0.0f);
         int py = (int)(plane->normal[1] > 0.0f);
         int pz = (int)(plane->normal[2] > 0.0f);
-        float dp = plane->normal[0] * box[px][0] + plane->normal[1] * box[py][1] + plane->normal[2] * box[pz][2];
+        f32 dp = plane->normal[0] * box[px][0] + plane->normal[1] * box[py][1] + plane->normal[2] * box[pz][2];
         if (isnan(dp))
         {
             return false;
@@ -1904,9 +1936,9 @@ static void calcTriNormal(vec3 norm, const vec3 p0, const vec3 p1, const vec3 p2
     vec3_sub(sp10, p1, p0);
     vec3_sub(sp20, p2, p0);
     vec3_cross(norm, sp10, sp20);
-    //float ln = vec3_len(norm);
-    //float l10 = vec3_len(sp10);
-    //float l20 = vec3_len(sp20);
+    //f32 ln = vec3_len(norm);
+    //f32 l10 = vec3_len(sp10);
+    //f32 l20 = vec3_len(sp20);
     vec3_norm(norm, norm);
     //vec3_scale(norm, norm, ln / (l10*l20));
 }
@@ -1924,7 +1956,7 @@ static void calcTriTangent(vec3 tangent, vec3 bitangent,
     vec2 deltaUV0, deltaUV1;
     vec2_sub(deltaUV0, uv1, uv0);
     vec2_sub(deltaUV1, uv2, uv0);
-    float r = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1]);
+    f32 r = 1.0f / (deltaUV0[0] * deltaUV1[1] - deltaUV1[0] * deltaUV0[1]);
 
     tangent[0] = (edge0[0] * deltaUV1[1] - edge1[0] * deltaUV0[1]) * r;
     tangent[1] = (edge0[1] * deltaUV1[1] - edge1[1] * deltaUV0[1]) * r;
@@ -1948,22 +1980,22 @@ static void calcTriTangent(vec3 tangent, vec3 bitangent,
 
 
 // https://github.com/stackgl/ray-aabb-intersection
-static bool rayIntersectAABB(const vec3 org, const vec3 dir, const BBox* aabb, float* pDist)
+static bool rayIntersectAABB(const vec3 org, const vec3 dir, const BBox* aabb, f32* pDist)
 {
-    float lo = -INFINITY;
-    float hi = +INFINITY;
+    f32 lo = -INFINITY;
+    f32 hi = +INFINITY;
     for (u32 i = 0; i < 3; ++i)
     {
         if ((-INFINITY == aabb->min[i]) || (INFINITY == aabb->max[i]))
         {
             return false;
         }
-        float dimLo = (aabb->min[i] - org[i]) / dir[i];
-        float dimHi = (aabb->max[i] - org[i]) / dir[i];
+        f32 dimLo = (aabb->min[i] - org[i]) / dir[i];
+        f32 dimHi = (aabb->max[i] - org[i]) / dir[i];
 
         if (dimLo > dimHi)
         {
-            float tmp = dimLo;
+            f32 tmp = dimLo;
             dimLo = dimHi;
             dimHi = tmp;
         }
