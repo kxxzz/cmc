@@ -139,6 +139,8 @@ static f32 angleInRad(f32 x, f32 y)
 
 
 
+
+
 // https://en.wikipedia.org/wiki/Fast_inverse_square_root
 static f32 invSqrt(f32 x)
 {
@@ -156,6 +158,16 @@ static f32 invSqrt(f32 x)
     conv.f = conv.f * (threehalfs - (x2 * conv.f * conv.f));
     return conv.f;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -254,6 +266,28 @@ static void vec2_interpo(vec2 r, const vec2 a, const vec2 b, f32 interpol)
     vec2_add(r, a, diff);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+static void angleToVec(vec3 dir, const vec2 angle)
+{
+    float sinPhi = sin(angle[0]);
+    float cosPhi = cos(angle[0]);
+    float sinTheta = sin(angle[1]);
+    float cosTheta = cos(angle[1]);
+
+    dir[0] = cosPhi * cosTheta;
+    dir[1] = sinTheta;
+    dir[2] = sinPhi * cosTheta;
+}
 
 
 
