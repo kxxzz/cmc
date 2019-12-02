@@ -1970,11 +1970,7 @@ static void calcTriNormal(vec3 norm, const vec3 p0, const vec3 p1, const vec3 p2
     vec3_sub(sp10, p1, p0);
     vec3_sub(sp20, p2, p0);
     vec3_cross(norm, sp10, sp20);
-    //f32 ln = vec3_len(norm);
-    //f32 l10 = vec3_len(sp10);
-    //f32 l20 = vec3_len(sp20);
     vec3_norm(norm, norm);
-    //vec3_scale(norm, norm, ln / (l10*l20));
 }
 
 
