@@ -945,6 +945,7 @@ static void mat4_frustum(mat4 r, f32 left, f32 right, f32 bottom, f32 top, f32 n
 static void mat4_orthonormalize(mat4 r, const mat4 a)
 {
     mat4 t;
+    mat4_ident(t);
     vec4_norm(t[0], a[0]);
     vec4_norm(t[1], a[1]);
     vec4_norm(t[2], a[2]);
@@ -1089,6 +1090,31 @@ static void mat4_finitePerspective(mat4 proj, f32 fov, f32 aspect, f32 znear, f3
 
 
 
+// https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#orthographic-projection
+static void mat4_orthographic(mat4 r, f32 xmag, f32 ymag, f32 n, f32 f)
+{
+    r[0][0] = 1.0f / xmag;
+    r[0][1] = 0.0f;
+    r[0][2] = 0.0f;
+    r[0][3] = 0.0f;
+    r[1][0] = 0.0f;
+    r[1][1] = 1.0f / ymag;
+    r[1][2] = 0.0f;
+    r[1][3] = 0.0f;
+    r[2][0] = 0.0f;
+    r[2][1] = 0.0f;
+    r[2][2] = 2.0f / (n - f);
+    r[2][3] = 0.0f;
+    r[3][0] = 0.0f;
+    r[3][1] = 0.0f;
+    r[3][2] = (f + n) / (n - f);
+    r[3][3] = 1.0f;
+}
+
+
+
+
+
 
 
 static f32 viewDistForPrjNormSize(f32 fov)
@@ -1138,6 +1164,28 @@ static void mat4_transpose(mat4 r, const mat4 a)
         }
     }
     mat4_dup(r, t);
+}
+
+static f32 mat4_determinant(const mat4 a)
+{
+    f32 s[6];
+    f32 c[6];
+    s[0] = a[0][0] * a[1][1] - a[1][0] * a[0][1];
+    s[1] = a[0][0] * a[1][2] - a[1][0] * a[0][2];
+    s[2] = a[0][0] * a[1][3] - a[1][0] * a[0][3];
+    s[3] = a[0][1] * a[1][2] - a[1][1] * a[0][2];
+    s[4] = a[0][1] * a[1][3] - a[1][1] * a[0][3];
+    s[5] = a[0][2] * a[1][3] - a[1][2] * a[0][3];
+
+    c[0] = a[2][0] * a[3][1] - a[3][0] * a[2][1];
+    c[1] = a[2][0] * a[3][2] - a[3][0] * a[2][2];
+    c[2] = a[2][0] * a[3][3] - a[3][0] * a[2][3];
+    c[3] = a[2][1] * a[3][2] - a[3][1] * a[2][2];
+    c[4] = a[2][1] * a[3][3] - a[3][1] * a[2][3];
+    c[5] = a[2][2] * a[3][3] - a[3][2] * a[2][3];
+
+    f32 det = s[0] * c[5] - s[1] * c[4] + s[2] * c[3] + s[3] * c[2] - s[4] * c[1] + s[5] * c[0];
+    return det;
 }
 
 static bool mat4_inverse(mat4 r, const mat4 a)
@@ -1233,6 +1281,46 @@ static void mat4_from_quat(mat4 r, const quat q)
     r[3][3] = 1.f;
 }
 
+static void mat4_to_quat(const mat4 m0, quat q)
+{
+    f32 scale = m0[0][0] + m0[1][1] + m0[2][2];
+    if (scale > 0.f)
+    {
+        f32 sr = sqrtf(scale + 1.f);
+        q[3] = sr * 0.5f;
+        sr = 0.5f / sr;
+        q[0] = (m0[2][1] - m0[1][2]) * sr;
+        q[1] = (m0[0][2] - m0[2][0]) * sr;
+        q[2] = (m0[1][0] - m0[0][1]) * sr;
+    }
+    else if ((m0[0][0] >= m0[1][1]) && (m0[0][0] >= m0[2][2]))
+    {
+        f32 sr = sqrtf(1.f + m0[0][0] - m0[1][1] - m0[2][2]);
+        f32 half = 0.5f / sr;
+        q[0] = 0.5f * sr;
+        q[1] = (m0[1][0] + m0[0][1]) * half;
+        q[2] = (m0[2][0] + m0[0][2]) * half;
+        q[3] = (m0[2][1] - m0[1][2]) * half;
+    }
+    else if (m0[1][1] > m0[2][2])
+    {
+        f32 sr = sqrtf(1.f + m0[1][1] - m0[0][0] - m0[2][2]);
+        f32 half = 0.5f / sr;
+        q[0] = (m0[0][1] + m0[1][0]) * half;
+        q[1] = 0.5f * sr;
+        q[2] = (m0[1][2] + m0[2][1]) * half;
+        q[3] = (m0[0][2] - m0[2][0]) * half;
+    }
+    else
+    {
+        f32 sr = sqrtf(1.f + m0[2][2] - m0[0][0] - m0[1][1]);
+        f32 half = 0.5f / sr;
+        q[0] = (m0[0][2] + m0[2][0]) * half;
+        q[1] = (m0[1][2] + m0[2][1]) * half;
+        q[2] = 0.5f * sr;
+        q[3] = (m0[1][0] - m0[0][1]) * half;
+    }
+}
 
 
 static void mat4_from_euler(mat4 r, const vec3 euler)
@@ -1272,7 +1360,7 @@ static bool mat4_eq_almost(const mat4 a, const mat4 b)
     {
         for (u32 j = 0; j < 4; ++j)
         {
-            if (fabs(a[i][j] - b[i][j]) > 0.00001)
+            if (fabs(a[i][j] - b[i][j]) > 0.00005)
             {
                 return false;
             }
@@ -1293,55 +1381,75 @@ static bool mat4_eq_almost(const mat4 a, const mat4 b)
 
 
 
-static void trs_decompose(const mat4 a, vec3 translation, vec3 rotation, vec3 scale)
-{
-    scale[0] = vec4_len(a[0]);
-    scale[1] = vec4_len(a[1]);
-    scale[2] = vec4_len(a[2]);
 
-    mat4 t;
-    mat4_orthonormalize(t, a);
-    rotation[0] = atan2f(t[1][2], t[2][2]);
-    rotation[1] = atan2f(-t[0][2], sqrtf(t[1][2] * t[1][2] + t[2][2] * t[2][2]));
-    rotation[2] = atan2f(t[0][1], t[0][0]);
+
+
+static void trs_decompose(const mat4 a, vec3 translation, quat rotation, vec3 scale)
+{
+    scale[0] = vec3_len(a[0]);
+    scale[1] = vec3_len(a[1]);
+    scale[2] = vec3_len(a[2]);
+
+    if (0.f > mat4_determinant(a))
+    {
+        scale[0] = -scale[0];
+    }
 
     translation[0] = a[3][0];
     translation[1] = a[3][1];
     translation[2] = a[3][2];
+
+    mat4 t;
+    mat4_orthonormalize(t, a);
+    mat4_to_quat(t, rotation);
 }
 
-static void trs_recompose(mat4 r, const vec3 translation, const vec3 rotation, const vec3 scale)
+static void trs_recompose(mat4 r, const vec3 translation, const quat rotation, const vec3 scale)
 {
-    mat4 rot[3];
-    for (u32 i = 0; i < 3; ++i)
-    {
-        mat4_rotate_axis(rot[i], DirectionUnary[i], rotation[i]);
-    }
     mat4 t;
-    mat4_mul(t, rot[2], rot[1]);
-    mat4_mul(t, t, rot[0]);
-
+    mat4_from_quat(t, rotation);
     f32 validScale[3];
     for (u32 i = 0; i < 3; ++i)
     {
-        if (fabsf(scale[i]) < FLT_EPSILON)
-        {
-            validScale[i] = 0.001f;
-        }
-        else
-        {
-            validScale[i] = scale[i];
-        }
+        validScale[i] = (fabsf(scale[i]) < FLT_EPSILON) ? 0.001f : scale[i];
     }
-    vec4_scale(t[0], t[0], validScale[0]);
-    vec4_scale(t[1], t[1], validScale[1]);
-    vec4_scale(t[2], t[2], validScale[2]);
+    vec3_scale(t[0], t[0], validScale[0]);
+    vec3_scale(t[1], t[1], validScale[1]);
+    vec3_scale(t[2], t[2], validScale[2]);
     t[3][0] = translation[0];
     t[3][1] = translation[1];
     t[3][2] = translation[2];
     t[3][3] = 1.f;
     mat4_dup(r, t);
 }
+
+
+
+
+
+
+
+static bool trs_decomposable(const mat4 a)
+{
+    if (a[0][3] != 0.0f ||
+        a[1][3] != 0.0f ||
+        a[2][3] != 0.0f ||
+        a[3][3] != 1.0f)
+    {
+        return false;
+    }
+    if (0.f == mat4_determinant(a))
+    {
+        return false;
+    }
+    vec3 t, s;
+    quat r;
+    trs_decompose(a, t, r, s);
+    mat4 a1;
+    trs_recompose(a1, t, r, s);
+    return mat4_eq_almost(a1, a);
+}
+
 
 
 
@@ -1386,13 +1494,6 @@ static void quat_mul(quat r, const quat a, const quat b)
     t[2] = a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0];
     t[3] = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2];
     quat_dup(r, t);
-}
-static void quat_from_axis_angle(quat r, const vec3 axis, f32 angle)
-{
-    quat t;
-    f32 rad = angle * 0.5f;
-    vec3_scale(t, axis, sinf(rad));
-    t[3] = cosf(rad);
 }
 static void quat_from_euler(quat r, const vec3 euler)
 {
