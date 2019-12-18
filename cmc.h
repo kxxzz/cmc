@@ -471,6 +471,108 @@ static void vec4_interpo(vec4 r, const vec4 a, const vec4 b, f32 interpol)
 
 
 
+
+
+
+
+
+
+
+
+
+static void quat_dup(quat r, const quat a)
+{
+    vec4_dup(r, a);
+}
+
+static void quat_ident(quat r)
+{
+    quat a = { 0,0,0,1 };
+    quat_dup(r, a);
+}
+static void quat_add(quat r, const quat a, const quat b)
+{
+    vec4_add(r, a, b);
+}
+static void quat_sub(quat r, const quat a, const quat b)
+{
+    vec4_sub(r, a, b);
+}
+static void quat_mul(quat r, const quat a, const quat b)
+{
+    quat t;
+    t[0] = a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1];
+    t[1] = a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2];
+    t[2] = a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0];
+    t[3] = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2];
+    quat_dup(r, t);
+}
+static void quat_normalize(quat r, const quat q)
+{
+    f32 l = 1.0f / sqrtf(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    r[0] = q[0] * l;
+    r[1] = q[1] * l;
+    r[2] = q[2] * l;
+    r[3] = q[3] * l;
+}
+static void quat_from_axis_angle(quat r, const vec3 v0, f32 angle)
+{
+    f32 half = angle * 0.5f;
+    f32 s = sinf(half);
+    r[0] = v0[0] * s;
+    r[1] = v0[1] * s;
+    r[2] = v0[2] * s;
+    r[3] = cosf(half);
+}
+static void quat_interpo(quat r, const quat a, const quat b, f32 factor)
+{
+    f32 cosom = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    quat end;
+    quat_dup(end, b);
+    if (cosom < 0.0f)
+    {
+        cosom = -cosom;
+        end[0] = -end[0];
+        end[1] = -end[1];
+        end[2] = -end[2];
+        end[3] = -end[3];
+    }
+    f32 sclp, sclq;
+    // 0.0001 : some epsilon
+    if ((1.0f - cosom) > 0.0001f)
+    {
+        f32 omega, sinom;
+        omega = acosf(cosom);
+        sinom = sinf(omega);
+        sclp = sinf((1.0f - factor) * omega) / sinom;
+        sclq = sinf(factor * omega) / sinom;
+    }
+    else
+    {
+        sclp = 1.0f - factor;
+        sclq = factor;
+    }
+    r[0] = sclp * a[0] + sclq * end[0];
+    r[1] = sclp * a[1] + sclq * end[1];
+    r[2] = sclp * a[2] + sclq * end[2];
+    r[3] = sclp * a[3] + sclq * end[3];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 static void mat2_dup(mat2 r, const mat2 a)
 {
     memcpy(r, a, sizeof(mat2));
@@ -623,13 +725,6 @@ static void mat3_from_euler(mat3 r, const vec3 euler)
 
 
 
-
-static void mat3_from_mat4rot(mat3 r, const mat4 m)
-{
-    vec3_dup(r[0], m[0]);
-    vec3_dup(r[1], m[1]);
-    vec3_dup(r[2], m[2]);
-}
 
 
 
@@ -1250,75 +1345,141 @@ static bool mat4_inverse(mat4 r, const mat4 a)
 
 
 
-
+// https://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToMatrix/index.htm
 static void mat4_from_quat(mat4 r, const quat q)
 {
-    f32 a = q[3];
-    f32 b = q[0];
-    f32 c = q[1];
-    f32 d = q[2];
-    f32 a2 = a*a;
-    f32 b2 = b*b;
-    f32 c2 = c*c;
-    f32 d2 = d*d;
-
-    r[0][0] = a2 + b2 - c2 - d2;
-    r[0][1] = 2.f*(b*c + a*d);
-    r[0][2] = 2.f*(b*d - a*c);
+    f32 xx = q[0] * q[0];
+    f32 yy = q[1] * q[1];
+    f32 zz = q[2] * q[2];
+    f32 xy = q[0] * q[1];
+    f32 zw = q[2] * q[3];
+    f32 xz = q[0] * q[2];
+    f32 yw = q[1] * q[3];
+    f32 yz = q[1] * q[2];
+    f32 xw = q[0] * q[3];
+    r[0][0] = 1.f - 2.f * (yy + zz);
+    r[0][1] = 2.f * (xy + zw);
+    r[0][2] = 2.f * (xz - yw);
     r[0][3] = 0.f;
-
-    r[1][0] = 2 * (b*c - a*d);
-    r[1][1] = a2 - b2 + c2 - d2;
-    r[1][2] = 2.f*(c*d + a*b);
+    r[1][0] = 2.f * (xy - zw);
+    r[1][1] = 1.f - 2.f * (xx + zz);
+    r[1][2] = 2.f * (yz + xw);
     r[1][3] = 0.f;
-
-    r[2][0] = 2.f*(b*d + a*c);
-    r[2][1] = 2.f*(c*d - a*b);
-    r[2][2] = a2 - b2 - c2 + d2;
+    r[2][0] = 2.f * (xz + yw);
+    r[2][1] = 2.f * (yz - xw);
+    r[2][2] = 1.f - 2.f * (xx + yy);
     r[2][3] = 0.f;
-
-    r[3][0] = r[3][1] = r[3][2] = 0.f;
+    r[3][0] = 0.f;
+    r[3][1] = 0.f;
+    r[3][2] = 0.f;
     r[3][3] = 1.f;
 }
 
-static void mat4_to_quat(const mat4 m0, quat q)
+// https://www.euclideanspace.com/maths/geometry/affine/reflection/matrix/index.htm
+// https://www.euclideanspace.com/maths/geometry/rotations/conversions/matrixToQuaternion/
+static void mat4_to_quat(const mat4 a, quat q)
 {
-    f32 scale = m0[0][0] + m0[1][1] + m0[2][2];
-    if (scale > 0.f)
+    //f32 scale = a[0][0] + a[1][1] + a[2][2];
+    //if (scale > 0.f)
+    //{
+    //    f32 sr = sqrtf(scale + 1.f);
+    //    q[3] = sr * 0.5f;
+    //    sr = 0.5f / sr;
+    //    q[0] = (a[2][1] - a[1][2]) * sr;
+    //    q[1] = (a[0][2] - a[2][0]) * sr;
+    //    q[2] = (a[1][0] - a[0][1]) * sr;
+    //}
+    //else if ((a[0][0] >= a[1][1]) && (a[0][0] >= a[2][2]))
+    //{
+    //    f32 sr = sqrtf(1.f + a[0][0] - a[1][1] - a[2][2]);
+    //    f32 half = 0.5 / sr;
+    //    q[0] = 0.5f * sr;
+    //    q[1] = (a[1][0] + a[0][1]) * half;
+    //    q[2] = (a[2][0] + a[0][2]) * half;
+    //    q[3] = (a[2][1] - a[1][2]) * half;
+    //}
+    //else if (a[1][1] > a[2][2])
+    //{
+    //    f32 sr = sqrtf(1.f + a[1][1] - a[0][0] - a[2][2]);
+    //    f32 half = 0.5f / sr;
+    //    q[0] = (a[0][1] + a[1][0]) * half;
+    //    q[1] = 0.5f * sr;
+    //    q[2] = (a[1][2] + a[2][1]) * half;
+    //    q[3] = (a[0][2] - a[2][0]) * half;
+    //}
+    //else
+    //{
+    //    f32 sr = sqrtf(1.f + a[2][2] - a[0][0] - a[1][1]);
+    //    f32 half = 0.5 / sr;
+    //    q[0] = (a[0][2] + a[2][0]) * half;
+    //    q[1] = (a[1][2] + a[2][1]) * half;
+    //    q[2] = 0.5f * sr;
+    //    q[3] = (a[1][0] - a[0][1]) * half;
+    //}
+    f32 c00 = a[0][0];
+    f32 c01 = a[0][1];
+    f32 c02 = a[0][2];
+    f32 c10 = a[1][0];
+    f32 c11 = a[1][1];
+    f32 c12 = a[1][2];
+    f32 c20 = a[2][0];
+    f32 c21 = a[2][1];
+    f32 c22 = a[2][2];
+
+    f32 fourXSquaredMinus1 = c00 - c11 - c22;
+    f32 fourYSquaredMinus1 = c11 - c00 - c22;
+    f32 fourZSquaredMinus1 = c22 - c00 - c11;
+    f32 fourWSquaredMinus1 = c00 + c11 + c22;
+
+    f32 fourBiggestSquaredMinus1 = fourWSquaredMinus1;
+    int biggestIndex = 0;
+    if (fourXSquaredMinus1 > fourBiggestSquaredMinus1)
     {
-        f32 sr = sqrtf(scale + 1.f);
-        q[3] = sr * 0.5f;
-        sr = 0.5f / sr;
-        q[0] = (m0[2][1] - m0[1][2]) * sr;
-        q[1] = (m0[0][2] - m0[2][0]) * sr;
-        q[2] = (m0[1][0] - m0[0][1]) * sr;
+        fourBiggestSquaredMinus1 = fourXSquaredMinus1;
+        biggestIndex = 1;
     }
-    else if ((m0[0][0] >= m0[1][1]) && (m0[0][0] >= m0[2][2]))
+    if (fourYSquaredMinus1 > fourBiggestSquaredMinus1)
     {
-        f32 sr = sqrtf(1.f + m0[0][0] - m0[1][1] - m0[2][2]);
-        f32 half = 0.5f / sr;
-        q[0] = 0.5f * sr;
-        q[1] = (m0[1][0] + m0[0][1]) * half;
-        q[2] = (m0[2][0] + m0[0][2]) * half;
-        q[3] = (m0[2][1] - m0[1][2]) * half;
+        fourBiggestSquaredMinus1 = fourYSquaredMinus1;
+        biggestIndex = 2;
     }
-    else if (m0[1][1] > m0[2][2])
+    if (fourZSquaredMinus1 > fourBiggestSquaredMinus1)
     {
-        f32 sr = sqrtf(1.f + m0[1][1] - m0[0][0] - m0[2][2]);
-        f32 half = 0.5f / sr;
-        q[0] = (m0[0][1] + m0[1][0]) * half;
-        q[1] = 0.5f * sr;
-        q[2] = (m0[1][2] + m0[2][1]) * half;
-        q[3] = (m0[0][2] - m0[2][0]) * half;
+        fourBiggestSquaredMinus1 = fourZSquaredMinus1;
+        biggestIndex = 3;
     }
-    else
+
+    f32 biggestVal = sqrt(fourBiggestSquaredMinus1 + 1.f) * 0.5f;
+    f32 mult = 0.25f / biggestVal;
+    switch (biggestIndex)
     {
-        f32 sr = sqrtf(1.f + m0[2][2] - m0[0][0] - m0[1][1]);
-        f32 half = 0.5f / sr;
-        q[0] = (m0[0][2] + m0[2][0]) * half;
-        q[1] = (m0[1][2] + m0[2][1]) * half;
-        q[2] = 0.5f * sr;
-        q[3] = (m0[1][0] - m0[0][1]) * half;
+    case 0:
+        q[3] = biggestVal;
+        q[0] = (c12 - c21) * mult;
+        q[1] = (c20 - c02) * mult;
+        q[2] = (c01 - c10) * mult;
+        break;
+    case 1:
+        q[3] = (c12 - c21) * mult;
+        q[0] = biggestVal;
+        q[1] = (c01 + c10) * mult;
+        q[2] = (c20 + c02) * mult;
+        break;
+    case 2:
+        q[3] = (c20 - c02) * mult;
+        q[0] = (c01 + c10) * mult;
+        q[1] = biggestVal;
+        q[2] = (c12 + c21) * mult;
+        break;
+    case 3:
+        q[3] = (c01 - c10) * mult;
+        q[0] = (c20 + c02) * mult;
+        q[1] = (c12 + c21) * mult;
+        q[2] = biggestVal;
+        break;
+    default:
+        assert(false);
+        break;
     }
 }
 
@@ -1342,6 +1503,67 @@ static void mat4_to_euler(const mat4 a, vec3 euler)
     euler[1] = atan2f(-t[0][2], sqrtf(t[1][2] * t[1][2] + t[2][2] * t[2][2]));
     euler[2] = atan2f(t[0][1], t[0][0]);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static void quat_from_euler(quat r, const vec3 euler)
+{
+    //f64 sX = sin(euler[0] * 0.5);
+    //f64 cX = cos(euler[0] * 0.5);
+    //f64 sY = sin(euler[1] * 0.5);
+    //f64 cY = cos(euler[1] * 0.5);
+    //f64 sZ = sin(euler[2] * 0.5);
+    //f64 cZ = cos(euler[2] * 0.5);
+    //r[0] = sY * sZ * cX + cY * cZ * sX;
+    //r[1] = sY * cZ * cX + cY * sZ * sX;
+    //r[2] = cY * sZ * cX - sY * cZ * sX;
+    //r[3] = cY * cZ * cX - sY * sZ * sX;
+    quat qx, qy, qz;
+    vec3 right = { 1, 0, 0 };
+    vec3 up = { 0,1,0 };
+    vec3 front = { 0, 0, 1 };
+    quat_from_axis_angle(qx, right, euler[0]);
+    quat_from_axis_angle(qy, up, euler[1]);
+    quat_from_axis_angle(qz, front, euler[2]);
+    quat t;
+    quat_mul(t, qy, qx);
+    quat_mul(r, qz, t);
+}
+static void quat_to_euler(const quat a, vec3 euler)
+{
+    //double sinr_cosp = 2 * (a[3] * a[0] + a[1] * a[2]);
+    //double cosr_cosp = 1 - 2 * (a[0] * a[0] + a[1] * a[1]);
+    //euler[0] = atan2(sinr_cosp, cosr_cosp);
+
+    //double sinp = 2 * (a[3] * a[1] - a[2] * a[0]);
+    //if (fabs(sinp) >= 1)
+    //{
+    //    // use 90 degrees if out of range
+    //    euler[1] = copysign(M_PI / 2, sinp);
+    //}
+    //else
+    //{
+    //    euler[1] = asin(sinp);
+    //}
+    //double siny_cosp = 2 * (a[3] * a[2] + a[0] * a[1]);
+    //double cosy_cosp = 1 - 2 * (a[1] * a[1] + a[2] * a[2]);
+    //euler[2] = atan2(siny_cosp, cosy_cosp);
+    mat4 m;
+    mat4_from_quat(m, a);
+    mat4_to_euler(m, euler);
+}
+
 
 
 
@@ -1384,16 +1606,24 @@ static bool mat4_eq_almost(const mat4 a, const mat4 b)
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 static void trs_decompose(const mat4 a, vec3 translation, quat rotation, vec3 scale)
 {
     scale[0] = vec3_len(a[0]);
     scale[1] = vec3_len(a[1]);
     scale[2] = vec3_len(a[2]);
-
-    if (0.f > mat4_determinant(a))
-    {
-        scale[0] = -scale[0];
-    }
 
     translation[0] = a[3][0];
     translation[1] = a[3][1];
@@ -1408,18 +1638,18 @@ static void trs_recompose(mat4 r, const vec3 translation, const quat rotation, c
 {
     mat4 t;
     mat4_from_quat(t, rotation);
+    t[3][0] = translation[0];
+    t[3][1] = translation[1];
+    t[3][2] = translation[2];
+    t[3][3] = 1.f;
     f32 validScale[3];
     for (u32 i = 0; i < 3; ++i)
     {
         validScale[i] = (fabsf(scale[i]) < FLT_EPSILON) ? 0.001f : scale[i];
     }
-    vec3_scale(t[0], t[0], validScale[0]);
-    vec3_scale(t[1], t[1], validScale[1]);
-    vec3_scale(t[2], t[2], validScale[2]);
-    t[3][0] = translation[0];
-    t[3][1] = translation[1];
-    t[3][2] = translation[2];
-    t[3][3] = 1.f;
+    vec4_scale(t[0], t[0], validScale[0]);
+    vec4_scale(t[1], t[1], validScale[1]);
+    vec4_scale(t[2], t[2], validScale[2]);
     mat4_dup(r, t);
 }
 
@@ -1448,107 +1678,6 @@ static bool trs_decomposable(const mat4 a)
     mat4 a1;
     trs_recompose(a1, t, r, s);
     return mat4_eq_almost(a1, a);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-static void quat_dup(quat r, const quat a)
-{
-    vec4_dup(r, a);
-}
-
-static void quat_ident(quat r)
-{
-    quat a = { 0,0,0,1 };
-    quat_dup(r, a);
-}
-static void quat_add(quat r, const quat a, const quat b)
-{
-    vec4_add(r, a, b);
-}
-static void quat_sub(quat r, const quat a, const quat b)
-{
-    vec4_sub(r, a, b);
-}
-static void quat_mul(quat r, const quat a, const quat b)
-{
-    quat t;
-    t[0] = a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1];
-    t[1] = a[3] * b[1] + a[1] * b[3] + a[2] * b[0] - a[0] * b[2];
-    t[2] = a[3] * b[2] + a[2] * b[3] + a[0] * b[1] - a[1] * b[0];
-    t[3] = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2];
-    quat_dup(r, t);
-}
-static void quat_from_euler(quat r, const vec3 euler)
-{
-    f64 sX = sin(euler[0] * 0.5);
-    f64 cX = cos(euler[0] * 0.5);
-    f64 sY = sin(euler[1] * 0.5);
-    f64 cY = cos(euler[1] * 0.5);
-    f64 sZ = sin(euler[2] * 0.5);
-    f64 cZ = cos(euler[2] * 0.5);
-    r[0] = sY * sZ * cX + cY * cZ * sX;
-    r[1] = sY * cZ * cX + cY * sZ * sX;
-    r[2] = cY * sZ * cX - sY * cZ * sX;
-    r[3] = cY * cZ * cX - sY * sZ * sX;
-}
-static void quat_to_euler(const quat a, vec3 euler)
-{
-    mat4 t;
-    mat4_from_quat(t, a);
-    mat4_to_euler(t, euler);
-}
-
-
-
-static void quat_interpo(quat r, const quat a, const quat b, f32 factor)
-{
-    f32 cosom = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-    quat end;
-    quat_dup(end, b);
-    if (cosom < 0.0f)
-    {
-        cosom = -cosom;
-        end[0] = -end[0];
-        end[1] = -end[1];
-        end[2] = -end[2];
-        end[3] = -end[3];
-    }
-    f32 sclp, sclq;
-    // 0.0001 : some epsilon
-    if ((1.0f - cosom) > 0.0001f)
-    {
-        f32 omega, sinom;
-        omega = acosf(cosom);
-        sinom = sinf(omega);
-        sclp = sinf((1.0f - factor) * omega) / sinom;
-        sclq = sinf(factor * omega) / sinom;
-    }
-    else
-    {
-        sclp = 1.0f - factor;
-        sclq = factor;
-    }
-    r[0] = sclp * a[0] + sclq * end[0];
-    r[1] = sclp * a[1] + sclq * end[1];
-    r[2] = sclp * a[2] + sclq * end[2];
-    r[3] = sclp * a[3] + sclq * end[3];
 }
 
 
