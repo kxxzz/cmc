@@ -1529,16 +1529,14 @@ static void quat_from_euler(quat r, const vec3 euler)
     //r[1] = sY * cZ * cX + cY * sZ * sX;
     //r[2] = cY * sZ * cX - sY * cZ * sX;
     //r[3] = cY * cZ * cX - sY * sZ * sX;
-    quat qx, qy, qz;
-    vec3 right = { 1, 0, 0 };
-    vec3 up = { 0,1,0 };
-    vec3 front = { 0, 0, 1 };
-    quat_from_axis_angle(qx, right, euler[0]);
-    quat_from_axis_angle(qy, up, euler[1]);
-    quat_from_axis_angle(qz, front, euler[2]);
+    quat q[3];
+    for (u32 i = 0; i < 3; ++i)
+    {
+        quat_from_axis_angle(q[i], DirectionUnary[i], euler[i]);
+    }
     quat t;
-    quat_mul(t, qy, qx);
-    quat_mul(r, qz, t);
+    quat_mul(t, q[1], q[0]);
+    quat_mul(r, q[2], t);
 }
 static void quat_to_euler(const quat a, vec3 euler)
 {
@@ -1647,9 +1645,9 @@ static void trs_recompose(mat4 r, const vec3 translation, const quat rotation, c
     {
         validScale[i] = (fabsf(scale[i]) < FLT_EPSILON) ? 0.001f : scale[i];
     }
-    vec4_scale(t[0], t[0], validScale[0]);
-    vec4_scale(t[1], t[1], validScale[1]);
-    vec4_scale(t[2], t[2], validScale[2]);
+    vec3_scale(t[0], t[0], validScale[0]);
+    vec3_scale(t[1], t[1], validScale[1]);
+    vec3_scale(t[2], t[2], validScale[2]);
     mat4_dup(r, t);
 }
 
